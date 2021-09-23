@@ -1,0 +1,36 @@
+﻿@page "/"
+@using System.Text.Json
+@using System.Net.Http.Headers
+@using demo_file_manager.Shared
+
+@inject HttpClient HttpClient
+@inject IJSRuntime JS
+@inject NavigationManager NavigationManager
+
+<button class="btn btn-primary" @onclick="Download">Download</button>
+<button class="btn btn-primary" @onclick="FetchDownload">Fetch Download</button>
+<button class="btn btn-primary" @onclick="DownloadStreamReference">.NET Download</button>
+
+@code
+{
+	public void Download() => NavigationManager.NavigateTo("api/document/sample.dat", true);
+
+	public async Task FetchDownload()
+	{
+		var model = new GetFileModel{ FilePath = "sample.dat" };
+		var modelSerialized = JsonSerializer.Serialize(model);
+		await JS.InvokeVoidAsync("download", $"{NavigationManager.BaseUri}api/document", modelSerialized);
+	}
+
+	private async Task DownloadStreamReference()
+	{
+		var model = new GetFileModel{ FilePath = "sample.dat" };
+		var request = new HttpRequestMessage(HttpMethod.Post, "api/document");
+		request.SetBrowserResponseStreamingEnabled(true);
+		request.Content = JsonContent.Create(model);
+		
+		using var response = await HttpClient.SendAsync(request, HttpCompletionOption.ResponseHeadersRead);
+		using var streamRef = new DotNetStreamReference(await response.Content.ReadAsStreamAsync());
+		await JS.InvokeVoidAsync("downloadStreamReference", streamRef, "application/octet-stream", "sample.dat");
+	}
+}

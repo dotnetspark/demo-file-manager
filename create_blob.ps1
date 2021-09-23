@@ -1,0 +1,1 @@
+﻿$out = new-object byte[] 1073741824; (new-object Random).NextBytes($out); [IO.File]::WriteAllBytes('C:\sample.dat', $out)
